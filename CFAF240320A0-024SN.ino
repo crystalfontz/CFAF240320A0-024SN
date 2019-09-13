@@ -50,7 +50,7 @@
 
 // ENABLE / DISABLE SD CARD USE
 // if enabled this demo will display BMP images found on the SD card
-#define SD_ENABLED 0
+#define SD_ENABLED 1
 
 // DISPLAY SPI FREQUENCY
 // try lowering this if you have display init or corruption issues
@@ -74,50 +74,66 @@
 
 //==============================================================================
 // LCD SPI & control lines
-//   ARD      | Port | LCD
-// -----------+------+----------------------------------------------------------
-//  #5/D5     |  PD5 | SYNC_PIN_SLAVE  (optional -- generally not used)
-//  #6/D6     |  PD6 | SYNC_PIN_MASTER (optional -- generally not used)
-//  #7/D7     |  PD7 | SD_CS
-//  #8/D8     |  PB0 | LCD_RS
-//  #9/D9     |  PB1 | LCD_RESET
-// #10/D10    |  PB2 | LCD_CS_NOT (or SPI SS)
-// #11/D11    |  PB3 | LCD_MOSI   (hardware SPI)
-// #12/D12    |  PB4 | not used   (would be MISO)
-// #13/D13    |  PB5 | LCD_SCK    (hardware SPI)
+//        
+// -------------------------------------------------------------------------------
+//    LCD Control Lines
+// -----------+-------+----------------------------------------------------------
+//   ARD      | Port  | LCD Pins    | Pin Function
+// -----------+-------+-------------+---------------------------------------------
+//  3.3V      |       | #3, 39      | POWER (+)
+//  GND       |       | #25, 27, 40 | POWER (-)
+//  #8/D8     |  PB0  | #32         | LCD_RS      
+//  #9/D9     |  PB1  | #35         | LCD_RESET
+// #10/D10    |  PB2  | #34         | LCD_CS_NOT (or SPI SS)
+// #11/D11    |  PB3  | #24         | LCD_MOSI   (hardware SPI)
+// #13/D13    |  PB5  | #33         | LCD_SCK    (hardware SPI)
+//
+// -------------------------------------------------------------------------------
+//    SD Control Lines
+// -----------+-------+-------------+---------------------------------------------
+//   ARD      | Port  | SD Pins     | Pin Function
+// -----------+-------+-------------+---------------------------------------------
+//  3.3V      |       |             | POWER (+)
+//  GND       |       |             | POWER (-)
+//  #7/D7     |  PD7  |             | SD_CS
+// #10/D10    |  PB2  |             | SD_CS_NOT (or SPI SS)
+// #11/D11    |  PB3  |             | SD_MOSI   (hardware SPI)
+// #11/D12    |  PB3  |             | SD_MISO   (hardware SPI)
+// #13/D13    |  PB5  |             | SD_SCK    (hardware SPI)
+
 //==============================================================================
 
 #define SPIPORT (PORTB)
 #define SPITOGGLE (PINB)
 // PB0 (0x01) is RS   (output) red    OLED pin 9
 #define SPI_RS_PIN (8)
-#define RS_MASK (0x01)
+#define RS_MASK (0x01) // 0000 0001
 #define CLR_RS (SPIPORT &= ~(RS_MASK))
 #define SET_RS (SPIPORT |= (RS_MASK))
 // PB1 (0x02) is RESET  (output) yellow OLED pin 7
 #define SPI_RESET_PIN (9)
-#define RESET_MASK (0x02)
+#define RESET_MASK (0x02) // 0000 0010
 #define CLR_RESET (SPIPORT &= ~(RESET_MASK))
 #define SET_RESET (SPIPORT |= (RESET_MASK))
 // PB2 (0x04) is CS   (output) gray   OLED pin 15
 #define SPI_CS_PIN (10)
-#define CS_MASK (0x04)
+#define CS_MASK (0x04) // 0000 0100
 #define CLR_CS (SPIPORT &= ~(CS_MASK))
 #define SET_CS (SPIPORT |= (CS_MASK))
 // PB3 (0x08) is MOSI (output) violet OLED pin 14
 #define SPI_MOSI_PIN (11)
-#define MOSI_MASK (0x08)
+#define MOSI_MASK (0x08) // 0000 1000
 #define CLR_MOSI (SPIPORT &= ~(MOSI_MASK))
 #define SET_MOSI (SPIPORT |= (MOSI_MASK))
 // PB4 (0x10) is MISO (input)  blue   OLED pin 13
 //(reference only, it is an input)
 #define SPI_MISO_PIN (12)
-#define MISO_MASK (0x10)
+#define MISO_MASK (0x10) // 0001 0000
 #define CLR_MISO (SPIPORT &= ~(MISO_MASK))
 #define SET_MISO (SPIPORT |= (MISO_MASK))
 // PB5 (0x20) is CLK  (output) green  OLED pin 12
 #define SPI_CLK_PIN (13)
-#define CLK_MASK (0x20)
+#define CLK_MASK (0x20) // 0010 0000
 #define CLR_CLK (SPIPORT &= ~(CLK_MASK))
 #define SET_CLK (SPIPORT |= (CLK_MASK))
 
@@ -244,7 +260,7 @@ void Initialize_LCD(void)
 	// MADCTL (36h): Memory Data Access Control
 	// Set the RGB vs BGR order to match a windows 24-bit BMP
 	SPI_sendCommand(ST7789_36_MADCTL);
-	SPI_sendData(0x08 | 0x80); // YXVL RH--
+	SPI_sendData(0x08 | 0xc0); // YXVL RH--
 	//SPI_sendData(0x08); // YXVL RH--
 						// |||| ||||-- Unused: 0
 						// |||| ||---- MH: Horizontal Refresh Order
@@ -951,20 +967,6 @@ void show_BMPs_in_root(void)
 
 	while (1)
 	{
-#if (SYNC == SYNC_MASTER)
-		//Signal that we are ready and waiting
-		digitalWrite(SYNC_PIN_MASTER, HIGH);
-		//Wait for the slave to be ready
-		while (0 == digitalRead(SYNC_PIN_SLAVE))
-			;
-#endif
-#if (SYNC == SYNC_SLAVE)
-		//Wait till the master is ready
-		while (0 == digitalRead(SYNC_PIN_MASTER))
-			;
-		//Signal what we are ready
-		digitalWrite(SYNC_PIN_SLAVE, HIGH);
-#endif
 
 		bmp_file = root_dir.openNextFile();
 		if (0 == bmp_file)
@@ -1013,25 +1015,7 @@ void show_BMPs_in_root(void)
 		//Release the BMP file handle
 		bmp_file.close();
 
-#if (SYNC == SYNC_MASTER)
-		//Signal that we are done and waiting
-		digitalWrite(SYNC_PIN_MASTER, LOW);
-		//Wait for the slave to be ready
-		while (0 != digitalRead(SYNC_PIN_SLAVE))
-			;
-#endif
-#if (SYNC == SYNC_SLAVE)
-		//Wait till the master is done
-		while (0 != digitalRead(SYNC_PIN_MASTER))
-			;
-		//Wait for a bit
 		delay(1000);
-		//Signal what we are done
-		digitalWrite(SYNC_PIN_SLAVE, LOW);
-#endif
-#if (SYNC == SYNC_NONE)
-		delay(1000);
-#endif
 	}
 	//Release the root directory file handle
 	root_dir.close();
@@ -1105,14 +1089,29 @@ void setup()
 	CLR_MOSI;
 	CLR_CLK;
 
+  if (!SD.begin(7))
+  {
+    Serial.println("SD failed to initialize");
+  }
 	// Initialize SPI. By default the clock is 4MHz.
 	SPI.begin();
 	SPI.beginTransaction(SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0));
 
+
 	//Initialize the LCD controller
 	Initialize_LCD();
+  //while (1);
 }
 //==============================================================================
+
+#define waittime      2000
+#define fontdemo      1
+#define linesdemo     1
+#define circledemo    0
+#define expandingdemo 0
+#define checkerdemo   1
+#define bmpdemo       1
+
 void loop()
 {
 	uint8_t i;
@@ -1124,7 +1123,7 @@ void loop()
 	uint8_t g;
 	uint8_t b;
 
-
+#if circledemo
 	//text
 	Serial.println("fill LCD");
 	Fill_LCD(0x00, 0x00, 0x00);
@@ -1135,8 +1134,10 @@ void loop()
 	F12x16_DrawString(F12CENTREX(16), 10+(18*4),	"ST7789V Cont. IC");
 	F12x16_DrawString(F12CENTREX(14), 10+(18*8),	"Seeeduino 3.3V");
 	F12x16_DrawString(F12CENTREX(19), 10+(18*9),	"Simple Display Demo");
-	delay(7000);
+	delay(waittime);
+#endif
 
+#if linesdemo
 	//Cheesy lines
 	Serial.println("fill LCD");
 	Fill_LCD(0x20, 0x20, 0x20);
@@ -1150,8 +1151,10 @@ void loop()
 		LCD_Line(120, 160, x, 319, r -= 3, g -= 2, b -= 1);
 	for (y = 319; 0 != y; y--)
 		LCD_Line(120, 160, 0, y, r + -3, g--, b++);
-	delay(2000);
+	delay(waittime);
+#endif
 
+#if circledemo
 	//Fill display with a given RGB value
 	Serial.println("fill LCD");
 	Fill_LCD(0x00, 0x00, 0xFF);
@@ -1168,16 +1171,20 @@ void loop()
 	LCD_Circle(120, 200 + 40, 32, 0xFF, 0x00, 0xFF);
 	//Draw a orange circle
 	LCD_Circle(120, 40 + 40, 28, 0xFF, 0xA5, 0x00);
-	delay(2000);
+	delay(waittime);
+#endif
 
+#if expandingdemo
 	Serial.println("fill LCD");
 	Fill_LCD(0x00, 0x00, 0x00);
 
 	Serial.println("expanding circles");
 	for (i = 2; i < 120; i += 2)
 		LCD_Circle(i + 2, 160, i, i << 2, 0xff - (i << 2), 0xFF);
-	delay(2000);
+	delay(waittime);
+#endif
 
+#if checkerdemo
 	//Write a 16x16 checkerboard
 	Serial.println("Checkerboard");
 	for (x = 0; x < (240 / 16); x++)
@@ -1189,12 +1196,14 @@ void loop()
 					else
 						Put_Pixel((x << 4) + sub_x, (y << 4) + sub_y, 0xFF, 0xFF - (x << 4), 0xFF - (y << 4));
 
-	delay(2000);
+	delay(waittime);
+#endif
 
+#if bmpdemo
 	//Slideshow of bitmap files on uSD card.
 #if (SD_ENABLED)
 	show_BMPs_in_root();
 #endif //SD_ENABLED
-
+#endif
 } // void loop()
 //==============================================================================
