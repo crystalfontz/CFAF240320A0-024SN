@@ -49,11 +49,11 @@
 //========= CONFIGURATION OPTIONS
 #define WAIT_TIME		2000
 #define DEMO_FONT		1
-#define DEMO_LINES		1
+#define DEMO_LINES		0
 #define DEMO_CIRCLES	0
-#define DEMO_EXPANDING	1
+#define DEMO_EXPANDING	0
 #define DEMO_CHECKER	1
-#define DEMO_BMPIMAGES	0 /* enabling also enables use of SD card */
+#define DEMO_BMPIMAGES	1 /* enabling also enables use of SD card */
 
 //BMP images must be save in the root directory of the SD card.
 //They must be exactly 240x320 pixels in size, and in 24-bit colour (3 bytes per pixel)
@@ -81,16 +81,22 @@
 //        
 // -------------------------------------------------------------------------------
 //    LCD Control Lines
-// -----------+-------+----------------------------------------------------------
-//   ARD      | Port  | LCD Pins    | Pin Function
-// -----------+-------+-------------+---------------------------------------------
-//  3.3V      |       | #3, 39      | POWER (+)
-//  GND       |       | #25, 27, 40 | POWER (-)
-//  #8/D8     |  PB0  | #32         | LCD_RS      
-//  #9/D9     |  PB1  | #35         | LCD_RESET
-// #10/D10    |  PB2  | #34         | LCD_CS_NOT (or SPI SS)
-// #11/D11    |  PB3  | #24         | LCD_MOSI   (hardware SPI)
-// #13/D13    |  PB5  | #33         | LCD_SCK    (hardware SPI)
+// -----------+-------+-----------------------------------------------------------
+//            |       |          4-WIRE SPI                     |
+// -----------+-------+-----------------------------------------+-----------------
+//   ARD      | Port  | LCD Pins    | Pin Function              |
+// -----------+-------+-------------+---------------------------+-----------------
+//  3.3V      |       | #3, 39      | POWER (+)                 |
+//  GND       |       | #25, 27, 40 | POWER (-)                 |
+//  #8/D8     |  PB0  | #32         | LCD_RS                    |
+//  #9/D9     |  PB1  | #35         | LCD_RESET                 |
+// #10/D10    |  PB2  | #34         | LCD_CS_NOT (or SPI SS)    |
+// #11/D11    |  PB3  | #24         | LCD_MOSI   (hardware SPI) |
+// #13/D13    |  PB5  | #33         | LCD_SCK    (hardware SPI) |
+// N/A        |       | #36         | LCD_IM0                   |
+// N/A        |       | #37         | LCD_IM1                   |
+// N/A        |       | #38         | LCD_IM2                   |
+//
 //
 // -------------------------------------------------------------------------------
 //    SD Control Lines
