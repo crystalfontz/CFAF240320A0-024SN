@@ -47,10 +47,16 @@
 //==============================================================================
 
 //========= CONFIGURATION OPTIONS
+#define WAIT_TIME		2000
+#define DEMO_FONT		1
+#define DEMO_LINES		1
+#define DEMO_CIRCLES	0
+#define DEMO_EXPANDING	1
+#define DEMO_CHECKER	1
+#define DEMO_BMPIMAGES	0 /* enabling also enables use of SD card */
 
-// ENABLE / DISABLE SD CARD USE
-// if enabled this demo will display BMP images found on the SD card
-#define SD_ENABLED 1
+//BMP images must be save in the root directory of the SD card.
+//They must be exactly 240x320 pixels in size, and in 24-bit colour (3 bytes per pixel)
 
 // DISPLAY SPI FREQUENCY
 // try lowering this if you have display init or corruption issues
@@ -60,14 +66,12 @@
 //==============================================================================
 
 #include <Arduino.h>
+#include <SPI.h>
 #include "font-ascii-12x16.h"
 
-#include <SPI.h>
-// C:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src\SPI.cpp
-// C:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src\SPI.h
-
-#if (SD_ENABLED)
+#if DEMO_BMPIMAGES
 #include <SD.h>
+//this uses the Adafruit SD Arduino library
 // C:\Program Files (x86)\Arduino\libraries\SD\src\SD.cpp
 // C:\Program Files (x86)\Arduino\libraries\SD\src\SD.h
 #endif
@@ -96,11 +100,9 @@
 //  3.3V      |       |             | POWER (+)
 //  GND       |       |             | POWER (-)
 //  #7/D7     |  PD7  |             | SD_CS
-// #10/D10    |  PB2  |             | SD_CS_NOT (or SPI SS)
 // #11/D11    |  PB3  |             | SD_MOSI   (hardware SPI)
-// #11/D12    |  PB3  |             | SD_MISO   (hardware SPI)
+// #12/D12    |  PB3  |             | SD_MISO   (hardware SPI)
 // #13/D13    |  PB5  |             | SD_SCK    (hardware SPI)
-
 //==============================================================================
 
 #define SPIPORT (PORTB)
@@ -260,8 +262,7 @@ void Initialize_LCD(void)
 	// MADCTL (36h): Memory Data Access Control
 	// Set the RGB vs BGR order to match a windows 24-bit BMP
 	SPI_sendCommand(ST7789_36_MADCTL);
-	SPI_sendData(0x08 | 0xc0); // YXVL RH--
-	//SPI_sendData(0x08); // YXVL RH--
+	SPI_sendData(0x08 | 0x80);
 						// |||| ||||-- Unused: 0
 						// |||| ||---- MH: Horizontal Refresh Order
 						// |||| |        0 = left to right
@@ -947,14 +948,14 @@ void SPI_send_pixels(uint8_t byte_count, uint8_t *data_ptr)
 		//count this byte
 		byte_count--;
 		//Now that we have done all we can do, wait for the transfer to finish.
-		while (!(SPSR & _BV(SPIF)))
-			;
+		while (!(SPSR & _BV(SPIF)));
 	}
 	// Deselect the LCD controller
 	SET_CS;
 }
 //==============================================================================
-#if (SD_ENABLED)
+#if DEMO_BMPIMAGES
+#define BMP_FLIP	1 /* enabling this draws BMP images the right way up */
 void show_BMPs_in_root(void)
 {
 	File root_dir;
@@ -962,6 +963,7 @@ void show_BMPs_in_root(void)
 	if (0 == root_dir)
 	{
 		Serial.println("show_BMPs_in_root: Can't open \"root\"");
+		return;
 	}
 	File bmp_file;
 
@@ -993,13 +995,16 @@ void show_BMPs_in_root(void)
 					// each 80*3 = 240 bytes.
 					//Making this static speeds it up slightly (10ms)
 					//Reduces flash size by 114 bytes, and uses 240 bytes.
-					static uint8_t
-						third_of_a_line[80 * 3];
+					static uint8_t third_of_a_line[80 * 3];
 					for (uint16_t line = 0; line < 320; line++)
 					{
 						//Set the LCD to the left of this line. BMPs store data
 						//lowest line first -- bottom up.
+#if BMP_FLIP						
+						Set_LCD_for_write_at_X_Y(0, 320-line);
+#else
 						Set_LCD_for_write_at_X_Y(0, line);
+#endif						
 						for (uint8_t line_section = 0; line_section < 3; line_section++)
 						{
 							//Get a third of the line
@@ -1009,7 +1014,7 @@ void show_BMPs_in_root(void)
 							SPI_send_pixels(80 * 3, third_of_a_line);
 						}
 					}
-				}
+			}
 			}
 		}
 		//Release the BMP file handle
@@ -1073,7 +1078,7 @@ void F12x16_DrawString(uint16_t x, uint16_t y, const char *text)
 void setup()
 {
 	//debug console
-	Serial.begin(9600);
+	Serial.begin(115200);
 	Serial.println("setup()");
 
 	//Set up ports B & C
@@ -1089,28 +1094,20 @@ void setup()
 	CLR_MOSI;
 	CLR_CLK;
 
-  if (!SD.begin(7))
-  {
-    Serial.println("SD failed to initialize");
-  }
-	// Initialize SPI. By default the clock is 4MHz.
+#if DEMO_BMPIMAGES
+	//Initialize the SD card (if used)
+	if (!SD.begin(7)) //use Arduino pin 7 for SS/CS.
+		Serial.println("SD failed to initialize");
+#endif
+
+	//Initialize SPI
 	SPI.begin();
 	SPI.beginTransaction(SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0));
 
-
 	//Initialize the LCD controller
 	Initialize_LCD();
-  //while (1);
 }
 //==============================================================================
-
-#define waittime      2000
-#define fontdemo      1
-#define linesdemo     1
-#define circledemo    0
-#define expandingdemo 0
-#define checkerdemo   1
-#define bmpdemo       1
 
 void loop()
 {
@@ -1123,10 +1120,11 @@ void loop()
 	uint8_t g;
 	uint8_t b;
 
-#if circledemo
-	//text
+#if DEMO_FONT
+	//text example
 	Serial.println("fill LCD");
 	Fill_LCD(0x00, 0x00, 0x00);
+	Serial.println("font example");
 	//												 123456789012345678901234567890123456789
 	F12x16_DrawString(F12CENTREX(12),  5+(18*0),	"CRYSTALFONTZ");
 	F12x16_DrawString(F12CENTREX(18), 10+(18*1),	"CFAF240320A0-024SN");
@@ -1134,11 +1132,11 @@ void loop()
 	F12x16_DrawString(F12CENTREX(16), 10+(18*4),	"ST7789V Cont. IC");
 	F12x16_DrawString(F12CENTREX(14), 10+(18*8),	"Seeeduino 3.3V");
 	F12x16_DrawString(F12CENTREX(19), 10+(18*9),	"Simple Display Demo");
-	delay(waittime);
+	delay(WAIT_TIME);
 #endif
 
-#if linesdemo
-	//Cheesy lines
+#if DEMO_LINES
+	//cheesy lines
 	Serial.println("fill LCD");
 	Fill_LCD(0x20, 0x20, 0x20);
 	Serial.println("cheesy lines");
@@ -1151,10 +1149,10 @@ void loop()
 		LCD_Line(120, 160, x, 319, r -= 3, g -= 2, b -= 1);
 	for (y = 319; 0 != y; y--)
 		LCD_Line(120, 160, 0, y, r + -3, g--, b++);
-	delay(waittime);
+	delay(WAIT_TIME);
 #endif
 
-#if circledemo
+#if DEMO_CIRCLES
 	//Fill display with a given RGB value
 	Serial.println("fill LCD");
 	Fill_LCD(0x00, 0x00, 0xFF);
@@ -1171,20 +1169,21 @@ void loop()
 	LCD_Circle(120, 200 + 40, 32, 0xFF, 0x00, 0xFF);
 	//Draw a orange circle
 	LCD_Circle(120, 40 + 40, 28, 0xFF, 0xA5, 0x00);
-	delay(waittime);
+	delay(WAIT_TIME);
 #endif
 
-#if expandingdemo
+#if DEMO_EXPANDING
+	//expanding circles
 	Serial.println("fill LCD");
 	Fill_LCD(0x00, 0x00, 0x00);
 
 	Serial.println("expanding circles");
 	for (i = 2; i < 120; i += 2)
 		LCD_Circle(i + 2, 160, i, i << 2, 0xff - (i << 2), 0xFF);
-	delay(waittime);
+	delay(WAIT_TIME);
 #endif
 
-#if checkerdemo
+#if DEMO_CHECKER
 	//Write a 16x16 checkerboard
 	Serial.println("Checkerboard");
 	for (x = 0; x < (240 / 16); x++)
@@ -1195,15 +1194,13 @@ void loop()
 						Put_Pixel((x << 4) + sub_x, (y << 4) + sub_y, 0x00, 0x00, 0x00);
 					else
 						Put_Pixel((x << 4) + sub_x, (y << 4) + sub_y, 0xFF, 0xFF - (x << 4), 0xFF - (y << 4));
-
-	delay(waittime);
+	delay(WAIT_TIME);
 #endif
 
-#if bmpdemo
+#if DEMO_BMPIMAGES
 	//Slideshow of bitmap files on uSD card.
-#if (SD_ENABLED)
+	Serial.println("BMPs");
 	show_BMPs_in_root();
-#endif //SD_ENABLED
 #endif
-} // void loop()
+}
 //==============================================================================
