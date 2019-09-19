@@ -49,11 +49,11 @@
 //========= CONFIGURATION OPTIONS
 #define WAIT_TIME		2000
 #define DEMO_FONT		1
-#define DEMO_LINES		0
-#define DEMO_CIRCLES	0
-#define DEMO_EXPANDING	0
+#define DEMO_LINES		1
+#define DEMO_CIRCLES	1
+#define DEMO_EXPANDING	1
 #define DEMO_CHECKER	1
-#define DEMO_BMPIMAGES	1 /* enabling also enables use of SD card */
+#define DEMO_BMPIMAGES	0 /* enabling also enables use of SD card */
 
 //BMP images must be save in the root directory of the SD card.
 //They must be exactly 240x320 pixels in size, and in 24-bit colour (3 bytes per pixel)
