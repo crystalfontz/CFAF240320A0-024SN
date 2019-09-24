@@ -1007,7 +1007,7 @@ void show_BMPs_in_root(void)
 						//Set the LCD to the left of this line. BMPs store data
 						//lowest line first -- bottom up.
 #if BMP_FLIP						
-						Set_LCD_for_write_at_X_Y(0, 320-line);
+						Set_LCD_for_write_at_X_Y(0, 319-line);
 #else
 						Set_LCD_for_write_at_X_Y(0, line);
 #endif						
