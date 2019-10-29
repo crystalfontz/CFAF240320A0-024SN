@@ -31,7 +31,7 @@ https://www.crystalfontz.com/product/cfaf240320a0024sn
 | microSD Pin | Seeeduino Pin| Connection Description |
 |-------------|--------------|------------------------|
 | 2 (CS)      | 7            | SD CS                  |
-| 3 (DI)      | MOSI         | SD MOSI                |
+| 3 (DI)      | 11           | SD MOSI                |
 | 4 (VDD)     |              | +3.3V Power            |
 | 5 (SCLK)    | 13           | SD SCLK                |
 | 6 (VSS)     | GND          | Ground                 |
