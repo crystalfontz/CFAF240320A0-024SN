@@ -46,6 +46,39 @@
 //For more information, please refer to <http://unlicense.org/>
 //==============================================================================
 
+// LCD / Touch Panel / Seeeduino / microSD Wiring Connections
+
+// |  LCD Pin   | Seeeduino Pin |    Connection Description    |
+// |------------|---------------|------------------------------|
+// | 1 (LED-A)  |               | LED Power (Approx 9V @ 40mA) |
+// | 2 (LED-K)  |               | LED Ground                   |
+// | 3 (IOVCC)  |               | +3.3V Power                  |
+// | 24 (SDA)   | 11            | LCD MOSI                     |
+// | 25 (GND)   | GND           | Ground                       |
+// | 27 (GND)   | GND           | Ground                       |
+// | 32 (WRB)   | 8             | LCD R/S                      |
+// | 33 (RS)    | 13            | LCD SCK                      |
+// | 34 (CSB)   | 10            | LCD CS                       |
+// | 35 (RESET) | 9             | LCD Reset                    |
+// | 36 (IM0)   | GND           | Ground                       |
+// | 37 (IM1)   |               | +3.3V Power                  |
+// | 38 (IM2)   |               | +3.3V Power                  |
+// | 39 (VCI)   |               | +3.3V Power                  |
+// | 40 (GND)   | GND           | Ground                       |
+
+// | microSD Pin | Seeeduino Pin | Connection Description |
+// |-------------|---------------|------------------------|
+// | 2 (CS)      | 7             | SD CS                  |
+// | 3 (DI)      | MOSI          | SD MOSI                |
+// | 4 (VDD)     |               | +3.3V Power            |
+// | 5 (SCLK)    | 13            | SD SCLK                |
+// | 6 (VSS)     | GND           | Ground                 |
+// | 7 (DO)      | 12            | SD MISO                |
+//
+// (microSD use is optional, if using enable DEMO_BMPIMAGES below)
+
+//==============================================================================
+
 //========= CONFIGURATION OPTIONS
 #define WAIT_TIME		2000
 #define DEMO_FONT		1
@@ -76,39 +109,6 @@
 // C:\Program Files (x86)\Arduino\libraries\SD\src\SD.h
 #endif
 
-//==============================================================================
-// LCD SPI & control lines
-//        
-// -------------------------------------------------------------------------------
-//    LCD Control Lines
-// -----------+-------+-----------------------------------------------------------
-//            |       |          4-WIRE SPI                     |
-// -----------+-------+-----------------------------------------+-----------------
-//   ARD      | Port  | LCD Pins    | Pin Function              |
-// -----------+-------+-------------+---------------------------+-----------------
-//  3.3V      |       | #3, 39      | POWER (+)                 |
-//  GND       |       | #25, 27, 40 | POWER (-)                 |
-//  #8/D8     |  PB0  | #32         | LCD_RS                    |
-//  #9/D9     |  PB1  | #35         | LCD_RESET                 |
-// #10/D10    |  PB2  | #34         | LCD_CS_NOT (or SPI SS)    |
-// #11/D11    |  PB3  | #24         | LCD_MOSI   (hardware SPI) |
-// #13/D13    |  PB5  | #33         | LCD_SCK    (hardware SPI) |
-// GND        |       | #36         | LCD_IM0                   |
-// 3.3V       |       | #37         | LCD_IM1                   |
-// 3.3V       |       | #38         | LCD_IM2                   |
-//
-//
-// -------------------------------------------------------------------------------
-//    SD Control Lines
-// -----------+-------+-------------+---------------------------------------------
-//   ARD      | Port  | SD Pins     | Pin Function
-// -----------+-------+-------------+---------------------------------------------
-//  3.3V      |       |             | POWER (+)
-//  GND       |       |             | POWER (-)
-//  #7/D7     |  PD7  |             | SD_CS
-// #11/D11    |  PB3  |             | SD_MOSI   (hardware SPI)
-// #12/D12    |  PB3  |             | SD_MISO   (hardware SPI)
-// #13/D13    |  PB5  |             | SD_SCK    (hardware SPI)
 //==============================================================================
 
 #define SPIPORT (PORTB)
